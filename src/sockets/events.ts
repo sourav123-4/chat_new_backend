@@ -2,6 +2,7 @@ import Message from "../models/Message";
 import Conversation from "../models/Conversation";
 import { io } from "../server";
 import { onlineUsers, lastSeen } from "./state";
+import cloudinary from "../config/cloudinary";
 
 export const registerSocketEvents = (socket: any) => {
   const userId = socket.userId;
@@ -83,15 +84,36 @@ socket.on("join_conversation", async (conversationId: string) => {
   /* ---------------- SEND MESSAGE ---------------- */
 socket.on("send_message", async (payload: any) => {
   try {
-    console.log("payload in event==>",payload)
+    console.log("payload in event==>", payload);
     const { conversationId, text, file, messageType } = payload;
+
+    let fileData = null;
+    let finalMessageType = messageType || "text";
+
+    // Handle file upload if file data is provided
+    if (file && file.path) {
+      const uploadRes = await cloudinary.uploader.upload(file.path, {
+        folder: "chatapp/messages",
+        resource_type: "auto",
+      });
+
+      fileData = {
+        url: uploadRes.secure_url,
+        type: uploadRes.resource_type === "image" ? "image" :
+              uploadRes.resource_type === "video" ? "video" : "file",
+        name: file.originalname,
+        size: file.size,
+      };
+
+      finalMessageType = fileData.type;
+    }
 
     const message = await Message.create({
       conversationId,
       senderId: userId,
       text: text || "",
-      file: file || null,
-      messageType,
+      file: fileData,
+      messageType: finalMessageType,
       status: "sent",
     });
 
@@ -110,7 +132,9 @@ socket.on("send_message", async (payload: any) => {
 
     /* 2️⃣ CHECK IF RECEIVER IS ONLINE */
     const otherParticipants = conversation.participants.filter((p: any) => p.toString() !== userId);
-    const isAnyReceiverOnline = otherParticipants.some((p: any) => onlineUsers.has(p.toString()));
+    const isAnyReceiverOnline = otherParticipants.some((p: any) =>
+      onlineUsers.has(p.toString()) && onlineUsers.get(p.toString())!.size > 0
+    );
 
     if (isAnyReceiverOnline) {
       // receiver is online → delivered

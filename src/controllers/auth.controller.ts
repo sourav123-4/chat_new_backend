@@ -27,35 +27,47 @@ export const signup = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
     let avatar = "";
-    const userExist = await User.findOne({email: email})
-    if(userExist){
-      res.status(400).json({error: "User Already Exists"})
+
+    // Check if user already exists
+    const userExist = await User.findOne({ email });
+    if (userExist) {
+      return res.status(400).json({ error: "User already exists" });
     }
-    // Upload image to Cloudinary
-   
+
+    // Upload avatar to Cloudinary if provided
     if (req.file) {
       const uploaded = await cloudinary.uploader.upload(req.file.path, {
         folder: "chatapp/users",
       });
       avatar = uploaded.secure_url;
     }
-    // Hash password
 
-    
+    // Hash password
     const hashed = await bcrypt.hash(password, 10);
+
     const user = await User.create({
       name,
       email,
       password: hashed,
       avatar,
     });
+
+    const token = generateToken(user._id.toString());
+
     return res.status(201).json({
+      success: true,
       message: "Signup successful",
-      user,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+      },
     });
   } catch (err) {
-    console.log("error",err)
-    return res.status(500).json({ error: err });
+    console.log("Signup error:", err);
+    return res.status(500).json({ error: "Signup failed" });
   }
 };
 
@@ -71,8 +83,8 @@ export const login = async (req: Request, res: Response) => {
     if (!match)
       return res.status(400).json({ message: "Invalid credentials" });
 
-    const token = generateToken(user._id);
-    const refresh = generateRefreshToken(user._id);
+    const token = generateToken(user._id.toString());
+    const refresh = generateRefreshToken(user._id.toString());
 
     return res.json({
       success: true,
@@ -109,8 +121,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
@@ -368,8 +380,8 @@ export const googleSignIn = async (req: Request, res: Response) => {
     }
 
     // Generate tokens
-    const accessToken = generateToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+    const accessToken = generateToken(user._id.toString());
+    const refreshToken = generateRefreshToken(user._id.toString());
 
     return res.json({
       success: true,
