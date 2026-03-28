@@ -1,13 +1,16 @@
 {
   "version": 2,
-  "rewrites": [
+  "buildCommand": "npm run build && rm -rf dist/src/server.js dist/src/server.d.ts",
+  "routes": [
     {
-      "source": "/api-docs/(.*)",
-      "destination": "/api/index.ts"
-    },
+      "src": "^/(.*)$",
+      "dest": "api/index.ts"
+    }
+  ],
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/api/index.ts"
+      "src": "api/index.ts",
+      "use": "@vercel/node"
     }
   ]
 }
