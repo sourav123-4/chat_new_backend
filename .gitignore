@@ -17,6 +17,15 @@ package-lock.json
 .env.development
 
 # =========================
+# Secret Keys & Credentials
+# =========================
+serviceAccountKey.json
+*.pem
+*.key
+*.p8
+credentials.json
+
+# =========================
 # Build / Dist
 # =========================
 dist/
