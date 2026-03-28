@@ -3,6 +3,8 @@ import http from "http";
 import cors from "cors";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
+import swaggerUi from "swagger-ui-express";
+import { specs } from "./config/swagger";
 import connectDB from "./config/db";
 
 import authRoutes from "./routes/auth.routes";
@@ -28,11 +30,23 @@ app.use(express.urlencoded({ extended: true }));
 /* ---------- DB ---------- */
 connectDB();
 
+/* ---------- SWAGGER UI ---------- */
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, {
+  swaggerOptions: {
+    persistAuthorization: true,
+  },
+}));
+
 /* ---------- ROUTES ---------- */
 app.use("/api/auth", authRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/notification", notificationRoutes);
+
+/* ---------- HEALTH CHECK ---------- */
+app.get("/health", (req, res) => {
+  res.json({ status: "Server is running", timestamp: new Date() });
+});
 
 /* ---------- SOCKET AUTH + EVENTS ---------- */
 import "./sockets"; // 👈 VERY IMPORTANT
@@ -41,3 +55,4 @@ import "./sockets"; // 👈 VERY IMPORTANT
 server.listen(process.env.PORT || 8000, () =>
   console.log("🚀 Server started on port 8000")
 );
+

@@ -6,6 +6,8 @@
     "rootDir": "src",
     "esModuleInterop": true,
     "strict": true,
-    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
   }
 }
