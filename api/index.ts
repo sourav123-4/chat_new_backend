@@ -38,6 +38,15 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, {
   },
 }));
 
+/* ---------- ROOT ROUTE ---------- */
+app.get("/", (req, res) => {
+  res.json({
+    message: "API is running",
+    docs: "/api-docs",
+    health: "/health"
+  });
+});
+
 /* ---------- HEALTH CHECK ---------- */
 app.get("/health", (req, res) => {
   res.json({
