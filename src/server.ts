@@ -12,6 +12,8 @@ import chatRoutes from "./routes/chat.routes";
 import messageRoutes from "./routes/message.routes";
 import notificationRoutes from "./routes/notification.routes";
 
+const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css";
+
 dotenv.config();
 
 const app = express();
@@ -31,10 +33,16 @@ app.use(express.urlencoded({ extended: true }));
 connectDB();
 
 /* ---------- SWAGGER UI ---------- */
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, {
   swaggerOptions: {
     persistAuthorization: true,
   },
+  customCssUrl: CSS_URL,
+  customJs: [
+    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js'
+  ]
 }));
 
 /* ---------- ROUTES ---------- */
