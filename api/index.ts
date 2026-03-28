@@ -36,11 +36,15 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, {
   swaggerOptions: {
     persistAuthorization: true,
   },
+  customCssUrl: '/api-docs/swagger-ui.css',
+  customJs: '/api-docs/swagger-ui-bundle.js',
+  customfavIcon: '/api-docs/favicon-32x32.png',
+  customSiteTitle: 'API Docs',
 }));
 
 /* ---------- ROOT ROUTE ---------- */
 app.get("/", (req, res) => {
-  res.json({
+  res.status(200).json({
     message: "API is running",
     docs: "/api-docs",
     health: "/health"
