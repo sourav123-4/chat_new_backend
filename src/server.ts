@@ -38,7 +38,6 @@ const JS_URLS = [
   "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js"
 ];
 
-app.use("/api-docs", swaggerUi.serve);
 app.get("/api-docs", (req, res) => {
   res.send(
     swaggerUi.generateHTML(specs, {
@@ -50,6 +49,9 @@ app.get("/api-docs", (req, res) => {
     })
   );
 });
+
+// This is still needed for some internal swagger assets
+app.use("/api-docs", swaggerUi.serve);
 
 /* ---------- ROUTES ---------- */
 app.use("/api/auth", authRoutes);
