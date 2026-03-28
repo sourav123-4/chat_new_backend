@@ -6,7 +6,7 @@ const options = {
     info: {
       title: 'ChatApp API Documentation',
       version: '1.0.0',
-      description: 'Complete API and WebSocket documentation for ChatApp Backend',
+      description: 'Complete API documentation for ChatApp Backend\n\n📞 **WebSocket Events:** See `SOCKET_EVENTS.md` in project root for detailed Socket.IO documentation',
       contact: {
         name: 'ChatApp Support',
         email: 'support@chatapp.com',
