@@ -2,6 +2,7 @@ import Message from "../models/Message";
 import Conversation from "../models/Conversation";
 
 import cloudinary from '../config/cloudinary';
+import { io } from "../server";
 
 export const sendMessage = async (req: any, res: any) => {
   try {
@@ -35,7 +36,9 @@ export const sendMessage = async (req: any, res: any) => {
       text: text || "",
       file: fileData,
       messageType,
+      status: "sent",
     });
+
 
     await Conversation.findByIdAndUpdate(conversationId, {
       lastMessage: message._id,
@@ -44,7 +47,7 @@ export const sendMessage = async (req: any, res: any) => {
     });
 
     // socket emit
-    // req.io.to(conversationId).emit("messageReceived", message);
+    io.to(conversationId).emit("message_received", message);
 
     res.json({ success: true, message });
   } catch (e) {

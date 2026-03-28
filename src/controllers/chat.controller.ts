@@ -1,4 +1,5 @@
 import Conversation from "../models/Conversation";
+import { getUserStatus } from "../utils/userStatus";
 
 export const createConversation = async (req: any, res: any) => {
   try {
@@ -32,7 +33,7 @@ export const createConversation = async (req: any, res: any) => {
   }
 };
 
-export const getChatList = async (req:any, res:any) => {
+export const getChatList = async (req: any, res: any) => {
   try {
     const userId = req.userId;
 
@@ -41,16 +42,32 @@ export const getChatList = async (req:any, res:any) => {
     })
       .sort({ lastMessageAt: -1 })
       .populate("participants", "name email avatar")
-      .populate("lastMessage", "file text sender createdAt")
+      .populate("lastMessage", "file text sender createdAt status")
       .exec();
+
+    const chatsWithStatus = chats.map((chat: any) => {
+      const otherUsers = chat.participants.filter(
+        (p: any) => p._id.toString() !== userId
+      );
+
+      const statuses = otherUsers.map((u: any) => ({
+        userId: u._id,
+        ...getUserStatus(u._id.toString()),
+      }));
+
+      return {
+        ...chat.toObject(),
+        userStatus: statuses,
+      };
+    });
 
     res.json({
       success: true,
-      chats,
-      message: "Chat List Fetched Successfully",
+      chats: chatsWithStatus,
     });
   } catch (error) {
     res.status(500).json({ success: false, error });
   }
 };
+
 

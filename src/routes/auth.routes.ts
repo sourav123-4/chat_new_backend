@@ -14,7 +14,8 @@ import {
   verifyEmail,
   forgotPassword,
   resetPassword,
-  verifyOtp
+  verifyOtp,
+  googleSignIn
 } from "../controllers/auth.controller";
 
 import { upload } from "../middlewares/multer";
@@ -24,6 +25,7 @@ const router = express.Router();
 // Auth
 router.post("/signup", upload.single("avatar"), signup);
 router.post("/login", login);
+router.post("/google-signin", googleSignIn);
 router.post("/refresh-token", refreshToken);
 router.post("/forgot-password", forgotPassword);
 router.post("/verify-otp", verifyOtp);

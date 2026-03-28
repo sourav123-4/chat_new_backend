@@ -12,9 +12,15 @@ const conversationSchema = new mongoose.Schema(
       ref: "User"
     },
     lastMessage: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Message",
-  },
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+    },
+    lastMessageStatus: {
+      type: String,
+      enum: ["sent", "delivered", "read"],
+      default: "sent"
+    }
+
   },
   { timestamps: true }
 );

@@ -8,6 +8,7 @@ import crypto from "crypto";
 import nodemailer from "nodemailer";
 import sendEmail from "../utils/sendEmail"; // you create this function
 import Otp from "../models/Otp";
+import { OAuth2Client } from "google-auth-library";
 
 /* -------------------------- GENERATE ACCESS TOKEN ------------------------- */
 const generateToken = (id: string) => {
@@ -95,7 +96,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "No account found with that email" });
 
     // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
     // Save OTP in DB (expires in 5 minutes)
     await Otp.create({
@@ -261,8 +262,18 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
 };
 
 /* ---------------------------------- LOGOUT -------------------------------- */
-export const logout = async (req: Request, res: Response) => {
-  return res.json({ message: "Logged out successfully" });
+export const logout = async (req: AuthRequest, res: Response) => {
+  try {
+    // Logout functionality - clear tokens on client side
+    // Server doesn't maintain session state, so just return success
+    // Client should delete tokens from localStorage/sessionStorage
+    return res.json({ 
+      success: true,
+      message: "Logged out successfully. Please clear your tokens on the client." 
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Logout failed" });
+  }
 };
 
 /* ------------------------------ DELETE ACCOUNT ---------------------------- */
@@ -313,4 +324,66 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
 /* ------------------------------ VERIFY EMAIL ------------------------------ */
 export const verifyEmail = async (req: Request, res: Response) => {
   return res.json({ message: "Verification email sent (dummy endpoint)" });
+};
+
+/* ----------------------------- GOOGLE SIGN-IN ----------------------------- */
+export const googleSignIn = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+
+    console.log("req.body==>",req.body)
+
+    if (!token) {
+      return res.status(400).json({ message: "ID token is required" });
+    }
+
+    // Initialize Google OAuth2 Client
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    // Verify the token
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    if (!payload || !payload.email) {
+      return res.status(400).json({ message: "Invalid token payload" });
+    }
+
+    const { email, name, picture } = payload;
+
+    // Check if user exists
+    let user: any = await User.findOne({ email });
+
+    if (!user) {
+      // Create new user if doesn't exist
+      user = await User.create({
+        name: name || email.split("@")[0],
+        email,
+        avatar: picture || "",
+        password: "", // No password for OAuth users
+      });
+    }
+
+    // Generate tokens
+    const accessToken = generateToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    return res.json({
+      success: true,
+      token: accessToken,
+      refreshToken,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+      },
+    });
+  } catch (error) {
+    console.error("Google sign-in error:", error);
+    return res.status(500).json({ message: "Google sign-in failed" });
+  }
 };
