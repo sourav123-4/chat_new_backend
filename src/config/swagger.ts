@@ -1,3 +1,4 @@
+import path from 'path';
 import swaggerJsdoc from 'swagger-jsdoc';
 
 const options = {
@@ -92,10 +93,9 @@ const options = {
     ],
   },
   apis: [
-    './src/routes/auth.routes.ts',
-    './src/routes/chat.routes.ts',
-    './src/routes/message.routes.ts',
-    './src/routes/notification.routes.ts',
+    path.join(process.cwd(), 'src/routes/*.routes.ts'),
+    path.join(process.cwd(), 'dist/routes/*.routes.js'), // For compiled code
+    path.join(process.cwd(), 'routes/*.routes.js'),      // Common Vercel path
   ],
 };
 

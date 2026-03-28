@@ -12,5 +12,9 @@
       "src": "api/index.ts",
       "use": "@vercel/node"
     }
+  ],
+  "rewrites": [
+    { "source": "/api-docs", "destination": "/api/index.ts" },
+    { "source": "/api/(.*)", "destination": "/api/index.ts" }
   ]
 }

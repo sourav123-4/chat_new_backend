@@ -32,6 +32,8 @@ connectDB();
 
 /* ---------- SWAGGER UI ---------- */
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, {
+  explorer: true,
+  customCssUrl: "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css",
   swaggerOptions: {
     persistAuthorization: true,
   },
