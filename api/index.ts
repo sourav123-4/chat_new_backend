@@ -32,15 +32,29 @@ app.use(express.json({ strict: false }));
 app.use(express.urlencoded({ extended: true }));
 
 /* ---------- SWAGGER UI ---------- */
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, {
-  swaggerOptions: {
-    persistAuthorization: true,
-  },
-  customCssUrl: '/api-docs/swagger-ui.css',
-  customJs: '/api-docs/swagger-ui-bundle.js',
-  customfavIcon: '/api-docs/favicon-32x32.png',
-  customSiteTitle: 'API Docs',
-}));
+/* ---------- SWAGGER UI ---------- */
+const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css";
+const JS_URLS = [
+  "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js"
+];
+
+// 1. We use a specific GET route to inject the CDN links manually
+app.get("/api-docs", (req, res) => {
+  res.send(
+    swaggerUi.generateHTML(specs, {
+      customCssUrl: CSS_URL,
+      customJs: JS_URLS,
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+      customSiteTitle: 'API Docs',
+    })
+  );
+});
+
+// 2. We still need the serve middleware for internal swagger routing
+app.use("/api-docs", swaggerUi.serve);
 
 /* ---------- ROOT ROUTE ---------- */
 app.get("/", (req, res) => {
