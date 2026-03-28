@@ -93,9 +93,15 @@ const options = {
     ],
   },
   apis: [
-    path.join(process.cwd(), "routes/*.ts"),
-    path.join(process.cwd(), "src/routes/*.ts"),
-    path.join(process.cwd(), "api/routes/*.ts"),
+    // Look in the root routes folder
+    path.join(process.cwd(), "routes/*.routes.js"),
+    path.join(process.cwd(), "routes/*.routes.ts"),
+    // Look in the src routes folder
+    path.join(process.cwd(), "src/routes/*.routes.js"),
+    path.join(process.cwd(), "src/routes/*.routes.ts"),
+    // Look in the api/routes folder (common for Vercel)
+    path.join(process.cwd(), "api/routes/*.routes.js"),
+    path.join(process.cwd(), "api/routes/*.routes.ts"),
   ],
 };
 
