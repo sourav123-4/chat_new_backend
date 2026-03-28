@@ -87,3 +87,5 @@ coverage/
 # ngrok
 # =========================
 ngrok.yml
+.vercel
+.env*.local

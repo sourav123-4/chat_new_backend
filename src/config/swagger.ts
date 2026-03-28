@@ -17,6 +17,14 @@ const options = {
         url: 'http://localhost:8000',
         description: 'Development Server',
       },
+      {
+        url: 'https://chat-app-backend-swart.vercel.app',
+        description: 'Production Server',
+      },
+      {
+        url: 'https://chat-app-backend-obqf4yxls-sourav1234s-projects-176421f8.vercel.app',
+        description: 'Preview Server',
+      },
     ],
     components: {
       securitySchemes: {
