@@ -31,13 +31,28 @@ app.use(express.urlencoded({ extended: true }));
 connectDB();
 
 /* ---------- SWAGGER UI ---------- */
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, {
-  explorer: true,
-  customCssUrl: "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css",
-  swaggerOptions: {
-    persistAuthorization: true,
-  },
-}));
+/* ---------- SWAGGER UI ---------- */
+const CSS_URL = "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css";
+const JS_URLS = [
+  "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js"
+];
+
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  (req: any, res: any) => {
+    res.send(
+      swaggerUi.generateHTML(specs, {
+        customCssUrl: CSS_URL,
+        customJs: JS_URLS,
+        swaggerOptions: {
+          persistAuthorization: true,
+        },
+      })
+    );
+  }
+);
 
 /* ---------- ROUTES ---------- */
 app.use("/api/auth", authRoutes);
