@@ -38,21 +38,18 @@ const JS_URLS = [
   "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js"
 ];
 
-app.use(
-  "/api-docs",
-  swaggerUi.serve,
-  (req: any, res: any) => {
-    res.send(
-      swaggerUi.generateHTML(specs, {
-        customCssUrl: CSS_URL,
-        customJs: JS_URLS,
-        swaggerOptions: {
-          persistAuthorization: true,
-        },
-      })
-    );
-  }
-);
+app.use("/api-docs", swaggerUi.serve);
+app.get("/api-docs", (req, res) => {
+  res.send(
+    swaggerUi.generateHTML(specs, {
+      customCssUrl: CSS_URL,
+      customJs: JS_URLS,
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+    })
+  );
+});
 
 /* ---------- ROUTES ---------- */
 app.use("/api/auth", authRoutes);
