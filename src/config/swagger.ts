@@ -93,9 +93,9 @@ const options = {
     ],
   },
   apis: [
-    path.join(process.cwd(), 'src/routes/*.routes.ts'),
-    path.join(process.cwd(), 'dist/routes/*.routes.js'), // For compiled code
-    path.join(process.cwd(), 'routes/*.routes.js'),      // Common Vercel path
+    path.join(process.cwd(), "routes/*.ts"),
+    path.join(process.cwd(), "src/routes/*.ts"),
+    path.join(process.cwd(), "api/routes/*.ts"),
   ],
 };
 
