@@ -1,11 +1,12 @@
 import Message from "../models/Message";
 import Conversation from "../models/Conversation";
 import cloudinary from '../config/cloudinary';
-import { io } from "../server";
 import { onlineUsers } from "../sockets/state";
+import { getGlobalIO } from "../sockets/global";
 
 export const sendMessage = async (req: any, res: any) => {
   try {
+    const io = getGlobalIO();
     console.log("req.body==>", req.body, req.file);
     const { conversationId, text } = req.body;
     let fileData = null;

@@ -1,10 +1,9 @@
 import Message from "../models/Message";
 import Conversation from "../models/Conversation";
-import { io } from "../server";
 import { onlineUsers, lastSeen } from "./state";
 import cloudinary from "../config/cloudinary";
 
-export const registerSocketEvents = (socket: any) => {
+export const registerSocketEvents = (socket: any, io: any) => {
   const userId = socket.userId;
 
   /* ---------------- ONLINE ---------------- */

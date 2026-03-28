@@ -14,6 +14,8 @@ import notificationRoutes from "../src/routes/notification.routes";
 
 dotenv.config();
 
+console.log("[Vercel] api/index.ts initializing");
+
 const app = express();
 
 // Connect to database
@@ -46,13 +48,17 @@ app.get("/health", (req, res) => {
 });
 
 /* ---------- ROUTES ---------- */
+console.log("[Vercel] Mounting auth routes to /api/auth");
 app.use("/api/auth", authRoutes);
+console.log("[Vercel] Mounting chats routes to /api/chats");
 app.use("/api/chats", chatRoutes);
+console.log("[Vercel] Mounting message routes to /api/messages");
 app.use("/api/messages", messageRoutes);
+console.log("[Vercel] Mounting notification routes to /api/notification");
 app.use("/api/notification", notificationRoutes);
 
 /* ---------- 404 HANDLER ---------- */
-app.use("*", (req, res) => {
+app.use("/*", (req, res) => {
   res.status(404).json({ error: "Route not found" });
 });
 
