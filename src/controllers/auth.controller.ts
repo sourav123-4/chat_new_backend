@@ -94,7 +94,7 @@ export const login = async (req: Request, res: Response) => {
       user,
     });
   } catch (e) {
-    console.log("e",e)
+    console.log("e", e)
     return res.status(500).json({ error: e });
   }
 };
@@ -136,7 +136,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     return res.json({ message: "OTP sent to email" });
   } catch (error) {
-    console.log("error is==>",error)
+    console.log("error is==>", error)
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -227,15 +227,15 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     if (email) updateData.email = email;
 
     // If avatar was uploaded
-  if (req.file) {
-  const uploaded: any = await uploadToCloudinary(req.file.buffer);
+    if (req.file) {
+      const uploaded: any = await uploadToCloudinary(req.file.buffer);
 
-  updateData.avatar = uploaded.secure_url;
-}
+      updateData.avatar = uploaded.secure_url;
+    }
 
-   const user = await User.findByIdAndUpdate(req.userId, updateData, {
-  returnDocument: "after", 
-}).select("-password");
+    const user = await User.findByIdAndUpdate(req.userId, updateData, {
+      returnDocument: "after",
+    }).select("-password");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -278,9 +278,9 @@ export const logout = async (req: AuthRequest, res: Response) => {
     // Logout functionality - clear tokens on client side
     // Server doesn't maintain session state, so just return success
     // Client should delete tokens from localStorage/sessionStorage
-    return res.json({ 
+    return res.json({
       success: true,
-      message: "Logged out successfully. Please clear your tokens on the client." 
+      message: "Logged out successfully. Please clear your tokens on the client."
     });
   } catch (error) {
     return res.status(500).json({ message: "Logout failed" });
@@ -342,7 +342,7 @@ export const googleSignIn = async (req: Request, res: Response) => {
   try {
     const { token } = req.body;
 
-    console.log("req.body==>",req.body)
+    console.log("req.body==>", req.body)
 
     if (!token) {
       return res.status(400).json({ message: "ID token is required" });

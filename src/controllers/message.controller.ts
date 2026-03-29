@@ -1,12 +1,10 @@
 import Message from "../models/Message";
 import Conversation from "../models/Conversation";
 import cloudinary from '../config/cloudinary';
-import { onlineUsers } from "../sockets/state";
-import { getGlobalIO } from "../sockets/global";
+import pusher from '../config/pusher';
 
 export const sendMessage = async (req: any, res: any) => {
   try {
-    const io = getGlobalIO();
     console.log("req.body==>", req.body, req.file);
     const { conversationId, text } = req.body;
     let fileData = null;
@@ -48,27 +46,19 @@ export const sendMessage = async (req: any, res: any) => {
       lastMessageStatus: "sent",
     });
 
-    // Emit to all participants in the conversation
-    io.to(conversationId).emit("message_received", message);
+    await pusher.trigger(`conversation-${conversationId}`, "message_received", message.toObject());
 
-    // Check if any other participants are online and mark as delivered
     const conversation = await Conversation.findById(conversationId);
     if (conversation) {
       const otherParticipants = conversation.participants.filter(
         (p: any) => p.toString() !== req.userId
       );
 
-      const isAnyReceiverOnline = otherParticipants.some((p: any) =>
-        onlineUsers.has(p.toString()) && onlineUsers.get(p.toString())!.size > 0
-      );
-
-      if (isAnyReceiverOnline) {
+      // With Pusher we can't check in-memory online state, so deliver immediately
+      if (otherParticipants.length > 0) {
         await Message.findByIdAndUpdate(message._id, { status: "delivered" });
-        await Conversation.findByIdAndUpdate(conversationId, {
-          lastMessageStatus: "delivered"
-        });
-
-        io.to(conversationId).emit("message_delivered", {
+        await Conversation.findByIdAndUpdate(conversationId, { lastMessageStatus: "delivered" });
+        await pusher.trigger(`conversation-${conversationId}`, "message_delivered", {
           messageId: message._id,
           conversationId,
         });

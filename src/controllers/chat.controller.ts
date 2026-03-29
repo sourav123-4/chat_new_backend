@@ -45,21 +45,22 @@ export const getChatList = async (req: any, res: any) => {
       .populate("lastMessage", "file text sender createdAt status")
       .exec();
 
-    const chatsWithStatus = chats.map((chat: any) => {
-      const otherUsers = chat.participants.filter(
-        (p: any) => p._id.toString() !== userId
-      );
+    const chatsWithStatus = await Promise.all(
+      chats.map(async (chat: any) => {
+        const otherUsers = chat.participants.filter(
+          (p: any) => p._id.toString() !== userId
+        );
 
-      const statuses = otherUsers.map((u: any) => ({
-        userId: u._id,
-        ...getUserStatus(u._id.toString()),
-      }));
+        const statuses = await Promise.all(
+          otherUsers.map(async (u: any) => ({
+            userId: u._id,
+            ...(await getUserStatus(u._id.toString())),
+          }))
+        );
 
-      return {
-        ...chat.toObject(),
-        userStatus: statuses,
-      };
-    });
+        return { ...chat.toObject(), userStatus: statuses };
+      })
+    );
 
     res.json({
       success: true,
