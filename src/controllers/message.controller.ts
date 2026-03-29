@@ -1,7 +1,20 @@
 import Message from "../models/Message";
 import Conversation from "../models/Conversation";
+import User from "../models/User";
 import cloudinary from '../config/cloudinary';
 import pusher from '../config/pusher';
+import streamifier from 'streamifier';
+import { sendPushNotification } from './notification.controller';
+
+const uploadBufferToCloudinary = (buffer: Buffer): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "chatapp/messages", resource_type: "auto" },
+      (error, result) => { if (error) reject(error); else resolve(result); }
+    );
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
+};
 
 export const sendMessage = async (req: any, res: any) => {
   try {
@@ -12,10 +25,7 @@ export const sendMessage = async (req: any, res: any) => {
 
     // If file exists → upload to Cloudinary
     if (req.file) {
-      const uploadRes = await cloudinary.uploader.upload(req.file.path, {
-        folder: "chatapp/messages",
-        resource_type: "auto",
-      });
+      const uploadRes = await uploadBufferToCloudinary(req.file.buffer);
 
       fileData = {
         url: uploadRes.secure_url,
@@ -61,6 +71,24 @@ export const sendMessage = async (req: any, res: any) => {
           messageId: message._id,
           conversationId,
         });
+
+        // Send push notification to each participant who has a device token
+        const sender = await User.findById(req.userId).select("name");
+        const recipients = await User.find({
+          _id: { $in: otherParticipants },
+          deviceToken: { $ne: null },
+        }).select("deviceToken");
+
+        await Promise.all(
+          recipients.map((r: any) =>
+            sendPushNotification({
+              deviceToken: r.deviceToken,
+              title: sender?.name || "New Message",
+              body: message.messageType === "text" ? (message.text || "Sent a message") : `Sent a ${message.messageType}`,
+              data: { conversationId, messageId: message._id.toString() },
+            })
+          )
+        );
       }
     }
 

@@ -9,6 +9,8 @@ const userSchema = new mongoose.Schema(
     isEmailVerified: { type: Boolean, default: false },
     isOnline: { type: Boolean, default: false },
     lastSeen: { type: Date, default: null },
+    deviceToken: { type: String, default: null },
+    deviceType: { type: String, enum: ["android", "ios", "web"], default: null },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
     emailVerificationToken: String,

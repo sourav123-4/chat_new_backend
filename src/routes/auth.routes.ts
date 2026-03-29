@@ -100,6 +100,15 @@ router.post("/signup", upload.single("avatar"), signup);
  *                 type: string
  *                 format: password
  *                 example: "SecurePass123!"
+ *               deviceToken:
+ *                 type: string
+ *                 description: FCM device token for push notifications (optional)
+ *                 example: "fcm-token-xyz"
+ *               deviceType:
+ *                 type: string
+ *                 enum: [android, ios, web]
+ *                 description: Device type (optional)
+ *                 example: "android"
  *     responses:
  *       200:
  *         description: Login successful

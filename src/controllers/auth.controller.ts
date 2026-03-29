@@ -75,14 +75,20 @@ export const signup = async (req: Request, res: Response) => {
 /* ---------------------------------- LOGIN --------------------------------- */
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, deviceToken, deviceType } = req.body;
 
     const user: any = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match)
-      return res.status(400).json({ message: "Invalid credentials" });
+    if (!match) return res.status(400).json({ message: "Invalid credentials" });
+
+    // Save device token if provided
+    if (deviceToken) {
+      user.deviceToken = deviceToken;
+      user.deviceType = deviceType || null;
+      await user.save();
+    }
 
     const token = generateToken(user._id.toString());
     const refresh = generateRefreshToken(user._id.toString());
@@ -94,7 +100,7 @@ export const login = async (req: Request, res: Response) => {
       user,
     });
   } catch (e) {
-    console.log("e", e)
+    console.log("e", e);
     return res.status(500).json({ error: e });
   }
 };
@@ -381,6 +387,12 @@ export const googleSignIn = async (req: Request, res: Response) => {
     // Generate tokens
     const accessToken = generateToken(user._id.toString());
     const refreshToken = generateRefreshToken(user._id.toString());
+
+    // Save device token if provided
+    const { deviceToken, deviceType } = req.body;
+    if (deviceToken) {
+      await User.findByIdAndUpdate(user._id, { deviceToken, deviceType: deviceType || null });
+    }
 
     return res.json({
       success: true,

@@ -1,30 +1,26 @@
 import { Request, Response } from "express";
 import admin from "../config/firebase";
 
-export const sendPushNotification = async (req: Request, res: Response) => {
+export const sendPushNotification = async ({
+  deviceToken,
+  title,
+  body,
+  data = {},
+}: {
+  deviceToken: string;
+  title: string;
+  body: string;
+  data?: Record<string, string>;
+}) => {
   try {
-    const { token, title, body } = req.body;
-
-    const message = {
-      token,
-      notification: {
-        title,
-        body,
-      },
-      data: {
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-      },
-    };
-
-    const response = await admin.messaging().send(message);
-
-    return res.status(200).json({
-      success: true,
-      message: "Notification sent successfully",
-      response,
+    await admin.messaging().send({
+      token: deviceToken,
+      notification: { title, body },
+      data: { click_action: "FLUTTER_NOTIFICATION_CLICK", ...data },
+      android: { priority: "high" },
+      apns: { payload: { aps: { sound: "default", badge: 1 } } },
     });
   } catch (error) {
-    console.error("Push Error:", error);
-    return res.status(500).json({ success: false, error });
+    console.error("Push notification error:", error);
   }
 };

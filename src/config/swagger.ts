@@ -47,6 +47,7 @@ const options = {
             isEmailVerified: { type: 'boolean', example: true },
             isOnline: { type: 'boolean', example: false },
             lastSeen: { type: 'string', format: 'date-time', nullable: true },
+            deviceType: { type: 'string', enum: ['android', 'ios', 'web'], nullable: true },
             createdAt: { type: 'string', format: 'date-time' },
           },
         },
