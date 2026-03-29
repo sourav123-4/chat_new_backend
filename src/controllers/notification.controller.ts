@@ -1,4 +1,3 @@
-import { Request, Response } from "express";
 import admin from "../config/firebase";
 
 export const sendPushNotification = async ({
@@ -12,15 +11,27 @@ export const sendPushNotification = async ({
   body: string;
   data?: Record<string, string>;
 }) => {
+  if (!deviceToken || deviceToken.trim() === "") {
+    console.log("[Push] Skipped — no device token");
+    return;
+  }
+
+  // Ensure all data values are strings
+  const stringData: Record<string, string> = {};
+  for (const key of Object.keys(data)) {
+    stringData[key] = String(data[key]);
+  }
+
   try {
-    await admin.messaging().send({
+    const result = await admin.messaging().send({
       token: deviceToken,
       notification: { title, body },
-      data: { click_action: "FLUTTER_NOTIFICATION_CLICK", ...data },
+      data: { click_action: "FLUTTER_NOTIFICATION_CLICK", ...stringData },
       android: { priority: "high" },
-      apns: { payload: { aps: { sound: "default", badge: 1 } } },
+      apns: { payload: { aps: { sound: "default" } } },
     });
-  } catch (error) {
-    console.error("Push notification error:", error);
+    console.log("[Push] Sent successfully:", result);
+  } catch (error: any) {
+    console.error("[Push] Failed:", error?.errorInfo || error?.message || error);
   }
 };

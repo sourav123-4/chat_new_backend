@@ -76,8 +76,10 @@ export const sendMessage = async (req: any, res: any) => {
         const sender = await User.findById(req.userId).select("name");
         const recipients = await User.find({
           _id: { $in: otherParticipants },
-          deviceToken: { $ne: null },
+          deviceToken: { $nin: [null, ""] },
         }).select("deviceToken");
+
+        console.log(`[Push] Recipients with token: ${recipients.length}`);
 
         await Promise.all(
           recipients.map((r: any) =>
@@ -85,7 +87,7 @@ export const sendMessage = async (req: any, res: any) => {
               deviceToken: r.deviceToken,
               title: sender?.name || "New Message",
               body: message.messageType === "text" ? (message.text || "Sent a message") : `Sent a ${message.messageType}`,
-              data: { conversationId, messageId: message._id.toString() },
+              data: { conversationId: conversationId.toString(), messageId: message._id.toString() },
             })
           )
         );
