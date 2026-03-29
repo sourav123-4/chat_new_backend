@@ -76,9 +76,9 @@ export const sendMessage = async (req: any, res: any) => {
 
 export const getMessages = async (req: any, res: any) => {
   try {
-    const { conversationId } = req.params;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const { conversationId, page: rawPage, limit: rawLimit } = req.body;
+    const page = parseInt(rawPage) || 1;
+    const limit = parseInt(rawLimit) || 20;
     const skip = (page - 1) * limit;
 
     const total = await Message.countDocuments({ conversationId });
