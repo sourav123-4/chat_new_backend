@@ -1,30 +1,37 @@
-import { Request, Response } from "express";
 import admin from "../config/firebase";
 
-export const sendPushNotification = async (req: Request, res: Response) => {
+export const sendPushNotification = async ({
+  deviceToken,
+  title,
+  body,
+  data = {},
+}: {
+  deviceToken: string;
+  title: string;
+  body: string;
+  data?: Record<string, string>;
+}) => {
+  if (!deviceToken || deviceToken.trim() === "") {
+    console.log("[Push] Skipped — no device token");
+    return;
+  }
+
+  // Ensure all data values are strings
+  const stringData: Record<string, string> = {};
+  for (const key of Object.keys(data)) {
+    stringData[key] = String(data[key]);
+  }
+
   try {
-    const { token, title, body } = req.body;
-
-    const message = {
-      token,
-      notification: {
-        title,
-        body,
-      },
-      data: {
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
-      },
-    };
-
-    const response = await admin.messaging().send(message);
-
-    return res.status(200).json({
-      success: true,
-      message: "Notification sent successfully",
-      response,
+    const result = await admin.messaging().send({
+      token: deviceToken,
+      notification: { title, body },
+      data: { click_action: "FLUTTER_NOTIFICATION_CLICK", ...stringData },
+      android: { priority: "high" },
+      apns: { payload: { aps: { sound: "default" } } },
     });
-  } catch (error) {
-    console.error("Push Error:", error);
-    return res.status(500).json({ success: false, error });
+    console.log("[Push] Sent successfully:", result);
+  } catch (error: any) {
+    console.error("[Push] Failed:", error?.errorInfo || error?.message || error);
   }
 };

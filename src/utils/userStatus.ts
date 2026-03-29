@@ -1,12 +1,7 @@
-import { onlineUsers, lastSeen } from '../sockets/state';
+import User from "../models/User";
 
-export const getUserStatus = (userId: string) => {
-  if (onlineUsers.has(userId) && onlineUsers.get(userId)!.size > 0) {
-    return { isOnline: true, lastSeen: null };
-  }
-
-  return {
-    isOnline: false,
-    lastSeen: lastSeen.get(userId) || null,
-  };
+export const getUserStatus = async (userId: string) => {
+  const user = await User.findById(userId).select("isOnline lastSeen");
+  if (!user) return { isOnline: false, lastSeen: null };
+  return { isOnline: user.isOnline, lastSeen: user.lastSeen };
 };

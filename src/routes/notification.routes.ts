@@ -1,4 +1,6 @@
-import express from "express";
+import express, { Request, Response } from "express";
+import { auth } from "../middlewares/auth.middleware";
+import User from "../models/User";
 import { sendPushNotification } from "../controllers/notification.controller";
 
 const router = express.Router();
@@ -10,7 +12,9 @@ const router = express.Router();
  *     tags:
  *       - Notifications
  *     summary: Send Push Notification
- *     description: Send a push notification to a user
+ *     description: Manually send a push notification to a user by userId. The user must have a deviceToken saved (set on login).
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -24,7 +28,7 @@ const router = express.Router();
  *             properties:
  *               userId:
  *                 type: string
- *                 description: ID of the user to send notification to
+ *                 description: ID of the user to notify
  *               title:
  *                 type: string
  *                 example: "New Message"
@@ -33,10 +37,10 @@ const router = express.Router();
  *                 example: "You have a new message from John"
  *               data:
  *                 type: object
- *                 description: Additional notification data
+ *                 description: Extra key-value data sent with the notification
  *     responses:
  *       200:
- *         description: Notification sent successfully
+ *         description: Notification sent
  *         content:
  *           application/json:
  *             schema:
@@ -44,11 +48,25 @@ const router = express.Router();
  *               properties:
  *                 success:
  *                   type: boolean
- *                 message:
- *                   type: string
  *       400:
- *         description: Bad request
+ *         description: User has no device token
+ *       404:
+ *         description: User not found
  */
-router.post("/send", sendPushNotification);
+router.post("/send", auth, async (req: Request, res: Response) => {
+  try {
+    const { userId, title, body, data } = req.body;
+
+    const user: any = await User.findById(userId).select("deviceToken");
+    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user.deviceToken) return res.status(400).json({ error: "User has no device token" });
+
+    await sendPushNotification({ deviceToken: user.deviceToken, title, body, data });
+
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e });
+  }
+});
 
 export default router;

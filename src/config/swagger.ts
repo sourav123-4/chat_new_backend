@@ -1,3 +1,4 @@
+import path from 'path';
 import swaggerJsdoc from 'swagger-jsdoc';
 
 const options = {
@@ -6,7 +7,7 @@ const options = {
     info: {
       title: 'ChatApp API Documentation',
       version: '1.0.0',
-      description: 'Complete API documentation for ChatApp Backend\n\n📞 **WebSocket Events:** See `SOCKET_EVENTS.md` in project root for detailed Socket.IO documentation',
+      description: 'Complete API documentation for ChatApp Backend\n\n📡 **Real-time Events (Pusher):**\n\n**Channels:**\n- `private-conversation-{conversationId}` — per-conversation events\n- `presence-global` — global online/offline presence\n\n**Server events** (triggered by backend):\n- `message_received` — new message\n- `message_delivered` — message delivered\n- `message_read` — message read\n- `messages_read_bulk` — all unread marked read\n- `user_online` — user came online\n- `user_offline` — user went offline\n\n**Client events** (triggered directly from frontend — instant, zero latency):\n- `client-typing` — user started typing\n- `client-stop_typing` — user stopped typing\n\n**Frontend setup:**\n```js\nconst pusher = new Pusher(PUSHER_KEY, {\n  cluster: PUSHER_CLUSTER,\n  authEndpoint: "/api/pusher/auth",\n  auth: { headers: { Authorization: `Bearer ${token}` } }\n});\n\n// Subscribe to conversation\nconst channel = pusher.subscribe(`private-conversation-${conversationId}`);\nchannel.bind("message_received", handler);\n\n// Trigger typing instantly (no API call needed)\nchannel.trigger("client-typing", { userId });\nchannel.trigger("client-stop_typing", { userId });\n```',
       contact: {
         name: 'ChatApp Support',
         email: 'support@chatapp.com',
@@ -44,6 +45,9 @@ const options = {
             email: { type: 'string', example: 'john@example.com' },
             avatar: { type: 'string', example: 'https://cloudinary.com/avatar.jpg' },
             isEmailVerified: { type: 'boolean', example: true },
+            isOnline: { type: 'boolean', example: false },
+            lastSeen: { type: 'string', format: 'date-time', nullable: true },
+            deviceType: { type: 'string', enum: ['android', 'ios', 'web'], nullable: true },
             createdAt: { type: 'string', format: 'date-time' },
           },
         },
@@ -92,10 +96,15 @@ const options = {
     ],
   },
   apis: [
-    './src/routes/auth.routes.ts',
-    './src/routes/chat.routes.ts',
-    './src/routes/message.routes.ts',
-    './src/routes/notification.routes.ts',
+    // Look in the root routes folder
+    path.join(process.cwd(), "routes/*.routes.js"),
+    path.join(process.cwd(), "routes/*.routes.ts"),
+    // Look in the src routes folder
+    path.join(process.cwd(), "src/routes/*.routes.js"),
+    path.join(process.cwd(), "src/routes/*.routes.ts"),
+    // Look in the api/routes folder (common for Vercel)
+    path.join(process.cwd(), "api/routes/*.routes.js"),
+    path.join(process.cwd(), "api/routes/*.routes.ts"),
   ],
 };
 

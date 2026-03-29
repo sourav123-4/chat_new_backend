@@ -1,33 +1,45 @@
 import multer from "multer";
-import path from "path";
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  // Allow images, videos, and documents
+import { v2 as cloudinary } from "cloudinary";
+import streamifier from "streamifier";
+const fileFilter = (
+  req: any,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
   const allowedTypes = /jpeg|jpg|png|gif|mp4|avi|mov|pdf|doc|docx|txt/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+
+  const extname = allowedTypes.test(
+    file.originalname.split(".").pop()?.toLowerCase() || ""
+  );
+
   const mimetype = allowedTypes.test(file.mimetype);
 
   if (mimetype && extname) {
-    return cb(null, true);
+    cb(null, true);
   } else {
-    cb(new Error('Invalid file type'));
+    cb(new Error("Invalid file type"));
   }
 };
 
 export const upload = multer({
-  storage,
+  storage: multer.memoryStorage(), // ✅ FIXED
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 10 * 1024 * 1024,
   },
-  fileFilter
+  fileFilter,
 });
+
+
+export const uploadToCloudinary = (buffer: Buffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "chatapp/users" },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
+};

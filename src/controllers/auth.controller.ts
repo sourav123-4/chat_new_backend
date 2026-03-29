@@ -9,7 +9,8 @@ import nodemailer from "nodemailer";
 import sendEmail from "../utils/sendEmail"; // you create this function
 import Otp from "../models/Otp";
 import { OAuth2Client } from "google-auth-library";
-
+import fs from "fs";
+import { uploadToCloudinary } from "../middlewares/multer";
 /* -------------------------- GENERATE ACCESS TOKEN ------------------------- */
 const generateToken = (id: string) => {
   return jwt.sign({ id }, process.env.JWT_SECRET!, { expiresIn: "7d" });
@@ -74,14 +75,20 @@ export const signup = async (req: Request, res: Response) => {
 /* ---------------------------------- LOGIN --------------------------------- */
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, deviceToken, deviceType } = req.body;
 
     const user: any = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match)
-      return res.status(400).json({ message: "Invalid credentials" });
+    if (!match) return res.status(400).json({ message: "Invalid credentials" });
+
+    // Save device token if provided
+    if (deviceToken) {
+      user.deviceToken = deviceToken;
+      user.deviceType = deviceType || null;
+      await user.save();
+    }
 
     const token = generateToken(user._id.toString());
     const refresh = generateRefreshToken(user._id.toString());
@@ -93,7 +100,7 @@ export const login = async (req: Request, res: Response) => {
       user,
     });
   } catch (e) {
-    console.log("e",e)
+    console.log("e", e);
     return res.status(500).json({ error: e });
   }
 };
@@ -135,7 +142,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     return res.json({ message: "OTP sent to email" });
   } catch (error) {
-    console.log("error is==>",error)
+    console.log("error is==>", error)
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -227,15 +234,13 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
 
     // If avatar was uploaded
     if (req.file) {
-      const uploaded = await cloudinary.uploader.upload(req.file.path, {
-        folder: "chatapp/users",
-      });
+      const uploaded: any = await uploadToCloudinary(req.file.buffer);
 
       updateData.avatar = uploaded.secure_url;
     }
 
     const user = await User.findByIdAndUpdate(req.userId, updateData, {
-      new: true,
+      returnDocument: "after",
     }).select("-password");
 
     if (!user) {
@@ -279,9 +284,9 @@ export const logout = async (req: AuthRequest, res: Response) => {
     // Logout functionality - clear tokens on client side
     // Server doesn't maintain session state, so just return success
     // Client should delete tokens from localStorage/sessionStorage
-    return res.json({ 
+    return res.json({
       success: true,
-      message: "Logged out successfully. Please clear your tokens on the client." 
+      message: "Logged out successfully. Please clear your tokens on the client."
     });
   } catch (error) {
     return res.status(500).json({ message: "Logout failed" });
@@ -343,7 +348,7 @@ export const googleSignIn = async (req: Request, res: Response) => {
   try {
     const { token } = req.body;
 
-    console.log("req.body==>",req.body)
+    console.log("req.body==>", req.body)
 
     if (!token) {
       return res.status(400).json({ message: "ID token is required" });
@@ -382,6 +387,12 @@ export const googleSignIn = async (req: Request, res: Response) => {
     // Generate tokens
     const accessToken = generateToken(user._id.toString());
     const refreshToken = generateRefreshToken(user._id.toString());
+
+    // Save device token if provided
+    const { deviceToken, deviceType } = req.body;
+    if (deviceToken) {
+      await User.findByIdAndUpdate(user._id, { deviceToken, deviceType: deviceType || null });
+    }
 
     return res.json({
       success: true,

@@ -53,21 +53,33 @@ router.post("/send", auth, upload.single("file"), sendMessage);
 
 /**
  * @swagger
- * /api/messages/{conversationId}:
- *   get:
+ * /api/messages/list:
+ *   post:
  *     tags:
  *       - Messages
  *     summary: Get Messages
- *     description: Get all messages from a conversation
+ *     description: Get paginated messages from a conversation. Latest messages load first, oldest within each page shown first.
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: conversationId
- *         required: true
- *         schema:
- *           type: string
- *         description: ID of the conversation
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - conversationId
+ *             properties:
+ *               conversationId:
+ *                 type: string
+ *               page:
+ *                 type: integer
+ *                 default: 1
+ *                 description: Page number (1 = most recent messages)
+ *               limit:
+ *                 type: integer
+ *                 default: 20
+ *                 description: Number of messages per page
  *     responses:
  *       200:
  *         description: Messages retrieved
@@ -82,10 +94,21 @@ router.post("/send", auth, upload.single("file"), sendMessage);
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Message'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     hasMore:
+ *                       type: boolean
  *       401:
  *         description: Unauthorized
  */
-router.get("/:conversationId", auth, getMessages);
+router.post("/list", auth, getMessages);
 
 export default router;
 
