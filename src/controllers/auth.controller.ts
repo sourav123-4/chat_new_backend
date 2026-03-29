@@ -10,6 +10,7 @@ import sendEmail from "../utils/sendEmail"; // you create this function
 import Otp from "../models/Otp";
 import { OAuth2Client } from "google-auth-library";
 import fs from "fs";
+import { uploadToCloudinary } from "../middlewares/multer";
 /* -------------------------- GENERATE ACCESS TOKEN ------------------------- */
 const generateToken = (id: string) => {
   return jwt.sign({ id }, process.env.JWT_SECRET!, { expiresIn: "7d" });
@@ -226,15 +227,10 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     if (email) updateData.email = email;
 
     // If avatar was uploaded
-   if (req.file) {
-  const uploaded = await cloudinary.uploader.upload(req.file.path, {
-    folder: "chatapp/users",
-  });
+  if (req.file) {
+  const uploaded: any = await uploadToCloudinary(req.file.buffer);
 
   updateData.avatar = uploaded.secure_url;
-
-  // ✅ delete local file after upload
-  fs.unlinkSync(req.file.path);
 }
 
    const user = await User.findByIdAndUpdate(req.userId, updateData, {
