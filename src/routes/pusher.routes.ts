@@ -75,66 +75,24 @@ router.post("/offline", auth, async (req: any, res) => {
 
 /**
  * @swagger
- * /api/pusher/typing:
- *   post:
- *     tags:
- *       - Pusher
- *     summary: Typing Indicator
- *     description: Call this when the user starts or stops typing. Broadcasts `typing` or `stop_typing` event on the conversation channel.
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - conversationId
- *               - isTyping
- *             properties:
- *               conversationId:
- *                 type: string
- *                 example: "64abc123"
- *               isTyping:
- *                 type: boolean
- *                 description: true = started typing, false = stopped typing
- *                 example: true
- *     responses:
- *       200:
- *         description: Typing event broadcasted
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *       401:
- *         description: Unauthorized
- */
-router.post("/typing", auth, async (req: any, res) => {
-  try {
-    const { conversationId, isTyping } = req.body;
-    const event = isTyping ? "typing" : "stop_typing";
-    await pusher.trigger(`conversation-${conversationId}`, event, {
-      userId: req.userId,
-      conversationId,
-    });
-    res.json({ success: true });
-  } catch (e) {
-    res.status(500).json({ error: e });
-  }
-});
-
-/**
- * @swagger
  * /api/pusher/auth:
  *   post:
  *     tags:
  *       - Pusher
  *     summary: Pusher Channel Auth
- *     description: Authenticates the client for private or presence Pusher channels. Called automatically by the Pusher JS SDK — you don't need to call this manually.
+ *     description: |
+ *       Authenticates the client for private or presence Pusher channels.
+ *       Called automatically by the Pusher JS SDK — configure it as the `authEndpoint`.
+ *
+ *       **Channel naming:**
+ *       - `private-conversation-{conversationId}` — per-conversation events
+ *       - `presence-global` — global online/offline presence
+ *
+ *       **Client events (instant, no server roundtrip):**
+ *       - `client-typing` — user started typing
+ *       - `client-stop_typing` — user stopped typing
+ *
+ *       These are triggered directly from frontend via `channel.trigger()` — zero latency.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -149,12 +107,10 @@ router.post("/typing", auth, async (req: any, res) => {
  *             properties:
  *               socket_id:
  *                 type: string
- *                 description: Socket ID provided by Pusher JS SDK
  *                 example: "1234.5678"
  *               channel_name:
  *                 type: string
- *                 description: Channel name to authenticate (e.g. private-xyz or presence-global)
- *                 example: "presence-global"
+ *                 example: "private-conversation-64abc123"
  *     responses:
  *       200:
  *         description: Channel auth token returned
@@ -168,12 +124,19 @@ router.post("/typing", auth, async (req: any, res) => {
  *       401:
  *         description: Unauthorized
  */
-router.post("/auth", auth, (req: any, res) => {
-  const { socket_id, channel_name } = req.body;
-  const authResponse = pusher.authorizeChannel(socket_id, channel_name, {
-    user_id: req.userId,
-  });
-  res.send(authResponse);
+router.post("/auth", auth, async (req: any, res) => {
+  try {
+    const { socket_id, channel_name } = req.body;
+    const user = await User.findById(req.userId).select("name avatar");
+
+    const authResponse = pusher.authorizeChannel(socket_id, channel_name, {
+      user_id: req.userId,
+      user_info: { name: user?.name, avatar: user?.avatar },
+    });
+    res.send(authResponse);
+  } catch (e) {
+    res.status(500).json({ error: e });
+  }
 });
 
 export default router;

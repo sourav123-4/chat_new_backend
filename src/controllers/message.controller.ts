@@ -46,7 +46,7 @@ export const sendMessage = async (req: any, res: any) => {
       lastMessageStatus: "sent",
     });
 
-    await pusher.trigger(`conversation-${conversationId}`, "message_received", message.toObject());
+    await pusher.trigger(`private-conversation-${conversationId}`, "message_received", message.toObject());
 
     const conversation = await Conversation.findById(conversationId);
     if (conversation) {
@@ -54,11 +54,10 @@ export const sendMessage = async (req: any, res: any) => {
         (p: any) => p.toString() !== req.userId
       );
 
-      // With Pusher we can't check in-memory online state, so deliver immediately
       if (otherParticipants.length > 0) {
         await Message.findByIdAndUpdate(message._id, { status: "delivered" });
         await Conversation.findByIdAndUpdate(conversationId, { lastMessageStatus: "delivered" });
-        await pusher.trigger(`conversation-${conversationId}`, "message_delivered", {
+        await pusher.trigger(`private-conversation-${conversationId}`, "message_delivered", {
           messageId: message._id,
           conversationId,
         });
