@@ -58,7 +58,7 @@ router.post("/send", auth, upload.single("file"), sendMessage);
  *     tags:
  *       - Messages
  *     summary: Get Messages
- *     description: Get all messages from a conversation
+ *     description: Get paginated messages from a conversation. Latest messages load first, oldest within each page shown first.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -67,7 +67,18 @@ router.post("/send", auth, upload.single("file"), sendMessage);
  *         required: true
  *         schema:
  *           type: string
- *         description: ID of the conversation
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number (1 = most recent messages)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of messages per page
  *     responses:
  *       200:
  *         description: Messages retrieved
@@ -82,6 +93,17 @@ router.post("/send", auth, upload.single("file"), sendMessage);
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Message'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     hasMore:
+ *                       type: boolean
  *       401:
  *         description: Unauthorized
  */

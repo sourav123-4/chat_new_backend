@@ -77,12 +77,29 @@ export const sendMessage = async (req: any, res: any) => {
 export const getMessages = async (req: any, res: any) => {
   try {
     const { conversationId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const total = await Message.countDocuments({ conversationId });
 
     const messages = await Message.find({ conversationId })
       .populate("senderId", "name email avatar")
-      .sort({ createdAt: 1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .then(msgs => msgs.reverse()); // oldest → newest within the page
 
-    res.json({ success: true, messages });
+    res.json({
+      success: true,
+      messages,
+      pagination: {
+        page,
+        limit,
+        total,
+        hasMore: skip + messages.length < total,
+      },
+    });
   } catch (e) {
     res.status(500).json({ error: e });
   }
