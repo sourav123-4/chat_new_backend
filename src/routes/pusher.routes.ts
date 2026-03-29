@@ -75,6 +75,60 @@ router.post("/offline", auth, async (req: any, res) => {
 
 /**
  * @swagger
+ * /api/pusher/typing:
+ *   post:
+ *     tags:
+ *       - Pusher
+ *     summary: Typing Indicator
+ *     description: Call this when the user starts or stops typing. Broadcasts `typing` or `stop_typing` event on the conversation channel.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - conversationId
+ *               - isTyping
+ *             properties:
+ *               conversationId:
+ *                 type: string
+ *                 example: "64abc123"
+ *               isTyping:
+ *                 type: boolean
+ *                 description: true = started typing, false = stopped typing
+ *                 example: true
+ *     responses:
+ *       200:
+ *         description: Typing event broadcasted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *       401:
+ *         description: Unauthorized
+ */
+router.post("/typing", auth, async (req: any, res) => {
+  try {
+    const { conversationId, isTyping } = req.body;
+    const event = isTyping ? "typing" : "stop_typing";
+    await pusher.trigger(`conversation-${conversationId}`, event, {
+      userId: req.userId,
+      conversationId,
+    });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e });
+  }
+});
+
+/**
+ * @swagger
  * /api/pusher/auth:
  *   post:
  *     tags:
