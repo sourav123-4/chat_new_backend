@@ -234,9 +234,9 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       updateData.avatar = uploaded.secure_url;
     }
 
-    const user = await User.findByIdAndUpdate(req.userId, updateData, {
-      new: true,
-    }).select("-password");
+   const user = await User.findByIdAndUpdate(req.userId, updateData, {
+  returnDocument: "after", 
+}).select("-password");
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
