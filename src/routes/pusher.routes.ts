@@ -5,7 +5,30 @@ import pusher from "../config/pusher";
 
 const router = express.Router();
 
-// Called by frontend when user connects
+/**
+ * @swagger
+ * /api/pusher/online:
+ *   post:
+ *     tags:
+ *       - Pusher
+ *     summary: Mark User Online
+ *     description: Call this when the user opens the app or connects. Marks user as online in DB and broadcasts `user_online` event on `presence-global` channel.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User marked online
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *       401:
+ *         description: Unauthorized
+ */
 router.post("/online", auth, async (req: any, res) => {
   try {
     await User.findByIdAndUpdate(req.userId, { isOnline: true });
@@ -16,7 +39,30 @@ router.post("/online", auth, async (req: any, res) => {
   }
 });
 
-// Called by frontend when user disconnects / app closes
+/**
+ * @swagger
+ * /api/pusher/offline:
+ *   post:
+ *     tags:
+ *       - Pusher
+ *     summary: Mark User Offline
+ *     description: Call this when the user closes the app or logs out. Marks user as offline, updates `lastSeen` in DB and broadcasts `user_offline` event on `presence-global` channel.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User marked offline
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *       401:
+ *         description: Unauthorized
+ */
 router.post("/offline", auth, async (req: any, res) => {
   try {
     await User.findByIdAndUpdate(req.userId, { isOnline: false, lastSeen: new Date() });
@@ -27,7 +73,47 @@ router.post("/offline", auth, async (req: any, res) => {
   }
 });
 
-// Pusher channel auth for private/presence channels
+/**
+ * @swagger
+ * /api/pusher/auth:
+ *   post:
+ *     tags:
+ *       - Pusher
+ *     summary: Pusher Channel Auth
+ *     description: Authenticates the client for private or presence Pusher channels. Called automatically by the Pusher JS SDK — you don't need to call this manually.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - socket_id
+ *               - channel_name
+ *             properties:
+ *               socket_id:
+ *                 type: string
+ *                 description: Socket ID provided by Pusher JS SDK
+ *                 example: "1234.5678"
+ *               channel_name:
+ *                 type: string
+ *                 description: Channel name to authenticate (e.g. private-xyz or presence-global)
+ *                 example: "presence-global"
+ *     responses:
+ *       200:
+ *         description: Channel auth token returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 auth:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ */
 router.post("/auth", auth, (req: any, res) => {
   const { socket_id, channel_name } = req.body;
   const authResponse = pusher.authorizeChannel(socket_id, channel_name, {

@@ -7,7 +7,7 @@ const options = {
     info: {
       title: 'ChatApp API Documentation',
       version: '1.0.0',
-      description: 'Complete API documentation for ChatApp Backend\n\n📞 **WebSocket Events:** See `SOCKET_EVENTS.md` in project root for detailed Socket.IO documentation',
+      description: 'Complete API documentation for ChatApp Backend\n\n📡 **Real-time Events (Pusher):**\n\n**Channels:**\n- `conversation-{conversationId}` — per-conversation events\n- `presence-global` — global online/offline presence\n\n**Events on `conversation-{conversationId}`:**\n- `message_received` — new message sent\n- `message_delivered` — message delivered to recipient\n- `message_read` — message read by recipient\n- `messages_read_bulk` — all unread messages marked read\n- `typing` — user started typing\n- `stop_typing` — user stopped typing\n\n**Events on `presence-global`:**\n- `user_online` — user came online\n- `user_offline` — user went offline (includes `lastSeen`)\n\n**Frontend setup:**\n```js\nconst pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });\nconst channel = pusher.subscribe(`conversation-${conversationId}`);\nchannel.bind("message_received", handler);\n```',
       contact: {
         name: 'ChatApp Support',
         email: 'support@chatapp.com',
@@ -45,6 +45,8 @@ const options = {
             email: { type: 'string', example: 'john@example.com' },
             avatar: { type: 'string', example: 'https://cloudinary.com/avatar.jpg' },
             isEmailVerified: { type: 'boolean', example: true },
+            isOnline: { type: 'boolean', example: false },
+            lastSeen: { type: 'string', format: 'date-time', nullable: true },
             createdAt: { type: 'string', format: 'date-time' },
           },
         },
