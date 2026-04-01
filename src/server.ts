@@ -10,6 +10,7 @@ import chatRoutes from "./routes/chat.routes";
 import messageRoutes from "./routes/message.routes";
 import notificationRoutes from "./routes/notification.routes";
 import pusherRoutes from "./routes/pusher.routes";
+import callRoutes from "./routes/call.routes";
 
 dotenv.config();
 
@@ -46,6 +47,7 @@ app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/notification", notificationRoutes);
 app.use("/api/pusher", pusherRoutes);
+app.use("/api/calls", callRoutes);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "Server is running", timestamp: new Date() });
