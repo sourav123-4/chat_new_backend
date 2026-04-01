@@ -5,7 +5,7 @@ import swaggerUi from "swagger-ui-express";
 import { specs } from "../src/config/swagger";
 import connectDB from "../src/config/db";
 import pusherRoutes from "../src/routes/pusher.routes";
-
+import callRoutes from "../src/routes/call.routes";
 import authRoutes from "../src/routes/auth.routes";
 import chatRoutes from "../src/routes/chat.routes";
 import messageRoutes from "../src/routes/message.routes";
@@ -64,6 +64,7 @@ app.use("/api/pusher", pusherRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/notification", notificationRoutes);
+app.use("/api/calls", callRoutes);
 
 /* ---------- 404 ---------- */
 app.use((_req, res) => {
