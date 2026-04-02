@@ -25,9 +25,9 @@ export const sendMessage = async (req: AuthRequest, res: any) => {
     let messageType = req.body.messageType || "text";
     let message;
 
-    // Call message
+    // Call message — create, populate, trigger Pusher, return early
     if (messageType === "call") {
-      message = await Message.create({
+      const callMsg = await Message.create({
         conversationId,
         senderId: req.userId,
         messageType: "call",
@@ -35,7 +35,10 @@ export const sendMessage = async (req: AuthRequest, res: any) => {
         callStatus: req.body.callStatus,
         duration: req.body.duration ?? 0,
       });
-    } else {
+      const populated = await callMsg.populate("senderId", "name avatar");
+      await pusher.trigger(`private-conversation-${conversationId}`, "message_received", populated.toObject());
+      return res.json({ success: true, message: populated });
+    }
 
     // If file exists → upload to Cloudinary
     if (req.file) {
@@ -61,7 +64,6 @@ export const sendMessage = async (req: AuthRequest, res: any) => {
       messageType,
       status: "sent",
     });
-    } // end non-call block
 
     // Update conversation
     await Conversation.findByIdAndUpdate(conversationId, {
@@ -87,7 +89,6 @@ export const sendMessage = async (req: AuthRequest, res: any) => {
           conversationId,
         });
 
-        // Send push notification to each participant who has a device token
         const sender = await User.findById(req.userId).select("name");
         const recipients = await User.find({
           _id: { $in: otherParticipants },
@@ -151,19 +152,31 @@ export const getMessages = async (req: any, res: any) => {
 
 export const getCallHistory = async (req: AuthRequest, res: any) => {
   try {
-    const conversationIds = await Conversation.find({
+    const conversations = await Conversation.find({
       participants: req.userId,
-    }).distinct("_id");
+    }).populate("participants", "name avatar");
+
+    const convIds = conversations.map((c: any) => c._id);
 
     const calls = await Message.find({
       messageType: "call",
-      conversationId: { $in: conversationIds },
+      conversationId: { $in: convIds },
     })
       .sort({ createdAt: -1 })
       .limit(100)
       .populate("senderId", "name avatar");
 
-    res.json({ calls });
+    const callsWithOther = calls.map((call) => {
+      const conv = conversations.find(
+        (c: any) => c._id.toString() === call.conversationId.toString()
+      ) as any;
+      const otherUser = conv?.participants?.find(
+        (p: any) => p._id.toString() !== req.userId
+      );
+      return { ...call.toObject(), otherUser };
+    });
+
+    res.json({ calls: callsWithOther });
   } catch (e) {
     res.status(500).json({ error: e });
   }
