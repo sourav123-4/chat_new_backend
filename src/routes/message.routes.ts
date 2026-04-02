@@ -1,6 +1,6 @@
 import express from "express";
 import { auth } from "../middlewares/auth.middleware";
-import { getMessages, sendMessage } from "../controllers/message.controller";
+import { getMessages, sendMessage, getCallHistory } from "../controllers/message.controller";
 import { upload } from "../middlewares/multer";
 
 const router = express.Router();
@@ -50,6 +50,7 @@ const router = express.Router();
  *         description: Unauthorized
  */
 router.post("/send", auth, upload.single("file"), sendMessage);
+router.get("/calls", auth, getCallHistory);
 
 /**
  * @swagger

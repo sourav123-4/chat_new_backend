@@ -5,6 +5,7 @@ import cloudinary from '../config/cloudinary';
 import pusher from '../config/pusher';
 import streamifier from 'streamifier';
 import { sendPushNotification } from './notification.controller';
+import { AuthRequest } from '../middlewares/auth.middleware';
 
 const uploadBufferToCloudinary = (buffer: Buffer): Promise<any> => {
   return new Promise((resolve, reject) => {
@@ -16,12 +17,25 @@ const uploadBufferToCloudinary = (buffer: Buffer): Promise<any> => {
   });
 };
 
-export const sendMessage = async (req: any, res: any) => {
+export const sendMessage = async (req: AuthRequest, res: any) => {
   try {
     console.log("req.body==>", req.body, req.file);
     const { conversationId, text } = req.body;
     let fileData = null;
-    let messageType = "text";
+    let messageType = req.body.messageType || "text";
+    let message;
+
+    // Call message
+    if (messageType === "call") {
+      message = await Message.create({
+        conversationId,
+        senderId: req.userId,
+        messageType: "call",
+        callType: req.body.callType,
+        callStatus: req.body.callStatus,
+        duration: req.body.duration ?? 0,
+      });
+    } else {
 
     // If file exists → upload to Cloudinary
     if (req.file) {
@@ -39,7 +53,7 @@ export const sendMessage = async (req: any, res: any) => {
     }
 
     // Create message
-    const message = await Message.create({
+    message = await Message.create({
       conversationId,
       senderId: req.userId,
       text: text || "",
@@ -47,6 +61,7 @@ export const sendMessage = async (req: any, res: any) => {
       messageType,
       status: "sent",
     });
+    } // end non-call block
 
     // Update conversation
     await Conversation.findByIdAndUpdate(conversationId, {
@@ -129,6 +144,26 @@ export const getMessages = async (req: any, res: any) => {
         hasMore: skip + messages.length < total,
       },
     });
+  } catch (e) {
+    res.status(500).json({ error: e });
+  }
+};
+
+export const getCallHistory = async (req: AuthRequest, res: any) => {
+  try {
+    const conversationIds = await Conversation.find({
+      participants: req.userId,
+    }).distinct("_id");
+
+    const calls = await Message.find({
+      messageType: "call",
+      conversationId: { $in: conversationIds },
+    })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .populate("senderId", "name avatar");
+
+    res.json({ calls });
   } catch (e) {
     res.status(500).json({ error: e });
   }
