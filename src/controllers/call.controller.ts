@@ -2,6 +2,7 @@ import { Response } from "express";
 import { RtcTokenBuilder, RtcRole } from "agora-token";
 import User from "../models/User";
 import admin from "../config/firebase";
+import pusher from "../config/pusher";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
 export const generateToken = (req: AuthRequest, res: Response) => {
@@ -54,4 +55,18 @@ export const initiateCall = async (req: AuthRequest, res: Response) => {
   });
 
   res.json({ success: true });
+};
+
+export const signalCall = async (req: AuthRequest, res: Response) => {
+  const { conversationId, event, channelName } = req.body;
+  if (!conversationId || !event || !channelName)
+    return res.status(400).json({ message: "conversationId, event, and channelName are required" });
+
+  await pusher.trigger(
+    `private-conversation-${conversationId}`,
+    `call_${event}`,
+    { channelName }
+  );
+
+  res.json({ ok: true });
 };
