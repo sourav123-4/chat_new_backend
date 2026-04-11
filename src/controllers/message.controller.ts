@@ -62,6 +62,7 @@ export const sendMessage = async (req: AuthRequest, res: any) => {
       text: text || "",
       file: fileData,
       messageType,
+      replyTo: req.body.replyTo || null,
       status: "sent",
     });
 

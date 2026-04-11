@@ -44,6 +44,11 @@ const messageSchema = new mongoose.Schema(
       enum: ["sending", "sent", "delivered", "read"],
       default: "sent"
     },
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+      default: null,
+    },
     readBy: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "User"
