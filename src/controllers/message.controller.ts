@@ -104,7 +104,11 @@ export const sendMessage = async (req: AuthRequest, res: any) => {
               deviceToken: r.deviceToken,
               title: sender?.name || "New Message",
               body: message.messageType === "text" ? (message.text || "Sent a message") : `Sent a ${message.messageType}`,
-              data: { conversationId: conversationId.toString(), messageId: message._id.toString() },
+              data: {
+                type: "message",
+                conversationId: conversationId.toString(),
+                messageId: message._id.toString(),
+              },
             })
           )
         );
