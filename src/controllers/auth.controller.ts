@@ -5,7 +5,6 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import cloudinary from "../config/cloudinary";
 import crypto from "crypto";
-import nodemailer from "nodemailer";
 import sendEmail from "../utils/sendEmail"; // you create this function
 import Otp from "../models/Otp";
 import { OAuth2Client } from "google-auth-library";
@@ -108,7 +107,10 @@ export const login = async (req: Request, res: Response) => {
 // FORGOT PASSWORD
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
-    const { email } = req.body;
+    const email = String(req.body.email ?? "").trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
 
     const user = await User.findOne({ email });
     if (!user)
@@ -117,33 +119,25 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // Generate 6-digit OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
 
-    // Save OTP in DB (expires in 5 minutes)
+    // Keep only the latest OTP valid for this email.
+    await Otp.deleteMany({ email });
+
     await Otp.create({
       email,
       otp,
       expiresAt: new Date(Date.now() + 5 * 60 * 1000),
     });
 
-    // Email OTP
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      from: process.env.MAIL_USER,
+    await sendEmail({
       to: email,
       subject: "Your OTP for Password Reset",
-      text: `Your OTP is ${otp}. It will expire in 5 minutes.`,
+      message: `<p>Your OTP is <strong>${otp}</strong>.</p><p>It will expire in 5 minutes.</p>`,
     });
 
     return res.json({ message: "OTP sent to email" });
   } catch (error) {
-    console.log("error is==>", error)
-    res.status(500).json({ message: "Server error" });
+    console.error("Forgot password error:", error);
+    res.status(500).json({ message: "Failed to send OTP. Please try again." });
   }
 };
 
@@ -151,7 +145,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
 export const verifyOtp = async (req: Request, res: Response) => {
   try {
-    const { email, otp } = req.body;
+    const email = String(req.body.email ?? "").trim().toLowerCase();
+    const otp = String(req.body.otp ?? "").trim();
 
     const record = await Otp.findOne({ email, otp });
 
@@ -171,7 +166,8 @@ export const verifyOtp = async (req: Request, res: Response) => {
 // RESET PASSWORD
 export const resetPassword = async (req: Request, res: Response) => {
   try {
-    const { email, newPassword } = req.body;
+    const email = String(req.body.email ?? "").trim().toLowerCase();
+    const { newPassword } = req.body;
 
     const user: any = await User.findOne({ email });
     if (!user)

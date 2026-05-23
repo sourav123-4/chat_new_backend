@@ -155,6 +155,50 @@ export const getMessages = async (req: any, res: any) => {
   }
 };
 
+export const markMessagesRead = async (req: AuthRequest, res: any) => {
+  try {
+    const { conversationId } = req.body;
+    if (!conversationId) {
+      return res.status(400).json({ success: false, error: "conversationId is required" });
+    }
+
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      participants: req.userId,
+    });
+
+    if (!conversation) {
+      return res.status(404).json({ success: false, error: "Conversation not found" });
+    }
+
+    const result = await Message.updateMany(
+      {
+        conversationId,
+        senderId: { $ne: req.userId },
+        status: { $ne: "read" },
+      },
+      {
+        $set: { status: "read" },
+        $addToSet: { readBy: req.userId },
+      }
+    );
+
+    await Conversation.findByIdAndUpdate(conversationId, {
+      lastMessageStatus: "read",
+    });
+
+    await pusher.trigger(`private-conversation-${conversationId}`, "messages_read_bulk", {
+      conversationId,
+      userId: req.userId,
+      modifiedCount: result.modifiedCount,
+    });
+
+    res.json({ success: true, modifiedCount: result.modifiedCount });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e });
+  }
+};
+
 export const getCallHistory = async (req: AuthRequest, res: any) => {
   try {
     const conversations = await Conversation.find({
