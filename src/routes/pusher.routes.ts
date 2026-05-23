@@ -31,7 +31,7 @@ const router = express.Router();
  */
 router.post("/online", auth, async (req: any, res) => {
   try {
-    await User.findByIdAndUpdate(req.userId, { isOnline: true });
+    await User.findByIdAndUpdate(req.userId, { isOnline: true, lastSeen: null });
     await pusher.trigger("presence-global", "user_online", { userId: req.userId });
     res.json({ success: true });
   } catch (e) {

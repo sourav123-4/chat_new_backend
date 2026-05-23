@@ -36,6 +36,12 @@ export const sendMessage = async (req: AuthRequest, res: any) => {
         duration: req.body.duration ?? 0,
       });
       const populated = await callMsg.populate("senderId", "name avatar");
+      await Conversation.findByIdAndUpdate(conversationId, {
+        lastMessage: callMsg._id,
+        lastMessageAt: callMsg.createdAt,
+        lastMessageSenderId: req.userId,
+        lastMessageStatus: "sent",
+      });
       await pusher.trigger(`private-conversation-${conversationId}`, "message_received", populated.toObject());
       return res.json({ success: true, message: populated });
     }
@@ -183,9 +189,14 @@ export const markMessagesRead = async (req: AuthRequest, res: any) => {
       }
     );
 
-    await Conversation.findByIdAndUpdate(conversationId, {
-      lastMessageStatus: "read",
-    });
+    if (
+      conversation.lastMessageSenderId &&
+      conversation.lastMessageSenderId.toString() !== req.userId
+    ) {
+      await Conversation.findByIdAndUpdate(conversationId, {
+        lastMessageStatus: "read",
+      });
+    }
 
     await pusher.trigger(`private-conversation-${conversationId}`, "messages_read_bulk", {
       conversationId,

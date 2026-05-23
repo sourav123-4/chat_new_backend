@@ -2,8 +2,27 @@ import express, { Request, Response } from "express";
 import { auth } from "../middlewares/auth.middleware";
 import User from "../models/User";
 import { sendPushNotification } from "../controllers/notification.controller";
+import { AuthRequest } from "../middlewares/auth.middleware";
 
 const router = express.Router();
+
+router.post("/register-token", auth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { deviceToken, deviceType } = req.body;
+    if (!deviceToken) {
+      return res.status(400).json({ error: "deviceToken is required" });
+    }
+
+    await User.findByIdAndUpdate(req.userId, {
+      deviceToken,
+      deviceType: deviceType || null,
+    });
+
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e });
+  }
+});
 
 /**
  * @swagger
