@@ -25,8 +25,12 @@ export const sendPushNotification = async ({
   try {
     const result = await admin.messaging().send({
       token: deviceToken,
-      notification: { title, body },
-      data: { click_action: "FLUTTER_NOTIFICATION_CLICK", ...stringData },
+      data: {
+        click_action: "CHATAPP_NOTIFICATION",
+        title,
+        body,
+        ...stringData,
+      },
       android: { priority: "high" },
       apns: { payload: { aps: { sound: "default" } } },
     });

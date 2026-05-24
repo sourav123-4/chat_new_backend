@@ -42,7 +42,10 @@ export const getChatList = async (req: any, res: any) => {
     })
       .sort({ lastMessageAt: -1 })
       .populate("participants", "name email avatar")
-      .populate("lastMessage", "file text sender createdAt status")
+      .populate(
+        "lastMessage",
+        "file text senderId messageType callType callStatus duration createdAt status"
+      )
       .exec();
 
     const chatsWithStatus = await Promise.all(
@@ -70,5 +73,4 @@ export const getChatList = async (req: any, res: any) => {
     res.status(500).json({ success: false, error });
   }
 };
-
 

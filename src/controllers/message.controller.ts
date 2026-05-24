@@ -17,6 +17,52 @@ const uploadBufferToCloudinary = (buffer: Buffer): Promise<any> => {
   });
 };
 
+const getMessagePushBody = (message: any) => {
+  if (message.messageType === "call") {
+    const icon = message.callType === "video" ? "Video" : "Voice";
+    if (message.callStatus === "missed") return `Missed ${icon.toLowerCase()} call`;
+    if (message.callStatus === "declined") return `${icon} call declined`;
+    return `${icon} call`;
+  }
+  if (message.messageType === "text") return message.text || "Sent a message";
+  return `Sent a ${message.messageType}`;
+};
+
+const notifyOtherParticipants = async (
+  conversationId: string,
+  senderId: string,
+  message: any
+) => {
+  const conversation = await Conversation.findById(conversationId);
+  if (!conversation) return;
+
+  const otherParticipants = conversation.participants.filter(
+    (p: any) => p.toString() !== senderId
+  );
+  if (otherParticipants.length === 0) return;
+
+  const sender = await User.findById(senderId).select("name");
+  const recipients = await User.find({
+    _id: { $in: otherParticipants },
+    deviceToken: { $nin: [null, ""] },
+  }).select("deviceToken");
+
+  await Promise.all(
+    recipients.map((r: any) =>
+      sendPushNotification({
+        deviceToken: r.deviceToken,
+        title: sender?.name || "ChatApp",
+        body: getMessagePushBody(message),
+        data: {
+          type: "message",
+          conversationId: conversationId.toString(),
+          messageId: message._id.toString(),
+        },
+      })
+    )
+  );
+};
+
 export const sendMessage = async (req: AuthRequest, res: any) => {
   try {
     console.log("req.body==>", req.body, req.file);
@@ -43,6 +89,7 @@ export const sendMessage = async (req: AuthRequest, res: any) => {
         lastMessageStatus: "sent",
       });
       await pusher.trigger(`private-conversation-${conversationId}`, "message_received", populated.toObject());
+      await notifyOtherParticipants(conversationId, req.userId!, populated);
       return res.json({ success: true, message: populated });
     }
 
@@ -96,28 +143,7 @@ export const sendMessage = async (req: AuthRequest, res: any) => {
           conversationId,
         });
 
-        const sender = await User.findById(req.userId).select("name");
-        const recipients = await User.find({
-          _id: { $in: otherParticipants },
-          deviceToken: { $nin: [null, ""] },
-        }).select("deviceToken");
-
-        console.log(`[Push] Recipients with token: ${recipients.length}`);
-
-        await Promise.all(
-          recipients.map((r: any) =>
-            sendPushNotification({
-              deviceToken: r.deviceToken,
-              title: sender?.name || "New Message",
-              body: message.messageType === "text" ? (message.text || "Sent a message") : `Sent a ${message.messageType}`,
-              data: {
-                type: "message",
-                conversationId: conversationId.toString(),
-                messageId: message._id.toString(),
-              },
-            })
-          )
-        );
+        await notifyOtherParticipants(conversationId, req.userId!, message);
       }
     }
 
